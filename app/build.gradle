@@ -1,0 +1,156 @@
+apply plugin: 'com.android.application'
+//#if #(KOTLIN:Defined)
+//apply plugin: 'kotlin-android'
+//apply plugin: 'kotlin-android-extensions'
+//#endif
+
+configurations { native_implementation }
+
+dependencies {
+    implementation fileTree(dir: 'src/main/libs', include: ['*.jar'])
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'com.google.android.material:material:1.0.0'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'com.drewnoakes:metadata-extractor:2.10.1'
+    
+    
+}
+
+// Extracts native libraries from AARs in the native_implementation configuration.
+// This is done so that the NDK can access these libraries.
+task extractNativeLibraries() {
+    doFirst {
+        configurations.native_implementation.files.each { f ->
+            copy {
+                from zipTree(f)
+                into 'build/native'
+                include 'jni/**/*'
+            }
+        }
+    }
+}
+
+tasks.whenTaskAdded {
+    task-> if (task.name.contains('external') && !task.name.contains('Clean')) {
+//#if #(Gradle.Dependency.NativeImplementation:IsRequired)
+//        task.dependsOn(extractNativeLibraries)
+//#endif
+    }
+}
+
+repositories {
+    maven { url 'https://maven.google.com' }
+}
+
+android {
+    compileSdkVersion = 30
+    buildToolsVersion = '30.0.3'
+
+    defaultConfig {
+//#if !#(LIBRARY:Defined)
+        applicationId = 'com.apps.app'
+//#endif
+        minSdkVersion 16
+        targetSdkVersion 30
+        versionCode = 1
+        versionName = '0.1.0'
+        multiDexEnabled true
+
+        ndk {
+//#if #(ANDROID_EMU:Defined)
+//            abiFilters = ["#(Config.Android.Emulator.Architecture || 'x86_64')"]
+//#elif #(DEBUG:Defined)
+            abiFilters = ['armeabi-v7a']
+//#else
+//            abiFilters = [#(Project.Android.Architectures.Release:Join(', ', '\'', '\''))]
+//#endif
+        }
+
+        externalNativeBuild {
+            cmake {
+                // The build configuration of the native binary might differ from the build
+                // configuration of the APK. For performance reasons, we don't want to use the
+                // Fuse Simulator on the significantly slower debug binaries, so building debug by
+                // default means we are giving users a bad experience by default. Native debug
+                // binaries are only really useful when actually debugging generated C++ code.
+                // Running 'uno build android --debug' will produce debuggable C++ code.
+                arguments '-DCMAKE_BUILD_TYPE=Release',
+                    '-DANDROID_STL=c++_static',
+                    '-DANDROID_PLATFORM=android-16',
+                    '-DANDROID_TOOLCHAIN=clang',
+                    '-DANDROID_NDK=/Users/morten/Library/Android/sdk/ndk/21.4.7075529'
+            }
+        }
+
+//#if #(Project.Android.SupportedLanguages:IsSet)
+//        resConfigs #(Project.Android.SupportedLanguages:Join(', ', '\"', '\"'))
+//#endif
+
+    }
+
+//#if #(Project.Android.Bundle.Language.EnableSplit:IsSet) || #(Project.Android.Bundle.Density.EnableSplit:IsSet) || #(Project.Android.Bundle.ABI.EnableSplit:IsSet)
+//    bundle {
+////        #if #(Project.Android.Bundle.Language.EnableSplit:IsSet)
+////        language {
+////            // Specifies that the app bundle should not support
+////            // configuration APKs for language resources. These
+////            // resources are instead packaged with each base and
+////            // dynamic feature APK.
+////            enableSplit = #(Project.Android.Bundle.Language.EnableSplit:ToLower)
+////        }
+////        #endif
+////        #if #(Project.Android.Bundle.Density.EnableSplit:IsSet)
+////        density {
+////            // This property is set to true by default.
+////            enableSplit = #(Project.Android.Bundle.Density.EnableSplit:ToLower)
+////        }
+////        #endif
+////        #if #(Project.Android.Bundle.ABI.EnableSplit:IsSet)
+////        abi {
+////            // This property is set to true by default.
+////            enableSplit = #(Project.Android.Bundle.ABI.EnableSplit:ToLower)
+////        }
+////        #endif
+//    }
+//#endif
+
+    externalNativeBuild {
+        cmake {
+            path 'src/main/CMakeLists.txt'
+        }
+    }
+
+//#if #(Project.Android.Key.Store:IsSet)
+//    signingConfigs {
+//        release {
+//            keyAlias '#(Project.Android.Key.Alias)'
+//            keyPassword '#(Project.Android.Key.AliasPassword)'
+//            storeFile file('#(Project.Android.Key.Store:Path)')
+//            storePassword '#(Project.Android.Key.StorePassword)'
+//        }
+//    }
+//#endif
+
+    buildTypes {
+        release {
+//#if #(DEBUG:Defined)
+            debuggable = true
+//#elif #(Project.Android.Key.Store:IsSet)
+//            signingConfig = signingConfigs.release
+//#endif
+            minifyEnabled = false
+            proguardFiles 'proguard-rules.pro'
+        }
+    }
+
+    aaptOptions {
+        cruncherEnabled = false
+    }
+
+    lintOptions {
+        checkReleaseBuilds = false
+    }
+}
+
+
