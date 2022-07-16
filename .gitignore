@@ -1,0 +1,5 @@
+/.gradle/
+/.idea/
+/.unobuild
+/app/.cxx/
+/app/build/
