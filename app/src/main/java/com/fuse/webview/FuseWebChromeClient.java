@@ -56,53 +56,46 @@ public class FuseWebChromeClient extends WebChromeClient
 	@Override
 	public boolean onShowFileChooser(final WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
 		// Cancel existing picker first, if any.
-		if (_filePathCallback != null) {
-			_filePathCallback.onReceiveValue(null);
-		}
+		onReceiveFileChooserValue(null);
 
+		// Set callback for onReceiveFileChooserValue().
 		_filePathCallback = filePathCallback;
 
 		if (Build.VERSION.SDK_INT >= 21) {
 			final boolean allowMultiple = fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE;
 
 			if (!allowMultiple) {
-				final PickImageDialog dialog = PickImageDialog
+				// Show a dialog where we can pick images using Camera or Gallery.
+
+				PickImageDialog dialog = PickImageDialog
 						.build(new PickSetup().setVideo(false))
 						.setOnPickResult(new IPickResult() {
 							@Override
 							public void onPickResult(PickResult r) {
-								if (_filePathCallback != null) {
-									_filePathCallback.onReceiveValue(new Uri[]{ r.getUri() });
-									_filePathCallback = null;
-								}
+								onReceiveFileChooserValue(new Uri[]{ r.getUri() });
 							}
 						})
 						.setOnPickCancel(new IPickCancel() {
 							@Override
 							public void onCancelClick() {
-								if (_filePathCallback != null) {
-									_filePathCallback.onReceiveValue(null);
-									_filePathCallback = null;
-								}
+								onReceiveFileChooserValue(null);
 							}
 						});
 
-				// It's possible to cancel the picker without receiving onCancelClick(), for example
-				// when tapping on the background, or when using the back button in camera mode.
+				// It's possible to cancel the dialog without receiving onCancelClick(), for example
+				// when tapping on the background or when using the back button.
 
-				// However, if we never call onReceiveValue() on our _filePathCallback, it is no
-				// longer possible to open any more pickers (onShowFileChooser just never gets
-				// called again...). So, to workaround the problem, we'll listen for any touch event
-				// from the WebView and make sure to call onReceiveValue() if it's not already done,
-				// and this makes it possible to open another picker.
+				// However, if we don't call onReceiveFileChooserValue(), it is no longer possible
+				// to open more dialogs. onShowFileChooser() just never gets called again...
+
+				// So, to workaround the problem, we'll listen for any touch events from WebView,
+				// make sure to call onReceiveFileChooserValue(), and this trick makes it possible
+				// to open another dialog!
 
 				webView.setOnTouchListener(new View.OnTouchListener() {
 					@Override
 					public boolean onTouch(View v, MotionEvent event) {
-						if (_filePathCallback != null) {
-							_filePathCallback.onReceiveValue(null);
-							_filePathCallback = null;
-						}
+						onReceiveFileChooserValue(null);
 						return false;
 					}
 				});
@@ -110,6 +103,8 @@ public class FuseWebChromeClient extends WebChromeClient
 				dialog.show(_activity.getSupportFragmentManager());
 				return true;
 			}
+
+			// Fallback:
 
 			Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
 			intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -127,41 +122,35 @@ public class FuseWebChromeClient extends WebChromeClient
 					if (requestCode == REQUEST_CODE_FILE_PICKER) {
 						if (resultCode == Activity.RESULT_OK) {
 							if (intent != null) {
-								if (_filePathCallback != null) {
-									Uri[] dataUris = null;
+								Uri[] dataUris = null;
 
-									try {
-										if (intent.getDataString() != null) {
-											dataUris = new Uri[] { Uri.parse(intent.getDataString()) };
-										}
-										else {
-											if (Build.VERSION.SDK_INT >= 16) {
-												if (intent.getClipData() != null) {
-													final int numSelectedFiles = intent.getClipData().getItemCount();
+								try {
+									if (intent.getDataString() != null) {
+										dataUris = new Uri[] { Uri.parse(intent.getDataString()) };
+									}
+									else {
+										if (Build.VERSION.SDK_INT >= 16) {
+											if (intent.getClipData() != null) {
+												final int numSelectedFiles = intent.getClipData().getItemCount();
 
-													dataUris = new Uri[numSelectedFiles];
+												dataUris = new Uri[numSelectedFiles];
 
-													for (int i = 0; i < numSelectedFiles; i++) {
-														dataUris[i] = intent.getClipData().getItemAt(i).getUri();
-													}
+												for (int i = 0; i < numSelectedFiles; i++) {
+													dataUris[i] = intent.getClipData().getItemAt(i).getUri();
 												}
 											}
 										}
 									}
-									catch (Exception e) {
-										Log.e("FuseWebChromeClient", e.toString());
-									}
-
-									_filePathCallback.onReceiveValue(dataUris);
-									_filePathCallback = null;
 								}
+								catch (Exception e) {
+									Log.e("FuseWebChromeClient", e.toString());
+								}
+
+								onReceiveFileChooserValue(dataUris);
 							}
 						}
 						else {
-							if (_filePathCallback != null) {
-								_filePathCallback.onReceiveValue(null);
-								_filePathCallback = null;
-							}
+							onReceiveFileChooserValue(null);
 						}
 
 						com.fuse.Activity.unsubscribeFromResults(this);
@@ -176,6 +165,13 @@ public class FuseWebChromeClient extends WebChromeClient
 			return true;
 		} else {
 			return super.onShowFileChooser(webView, filePathCallback, fileChooserParams);
+		}
+	}
+
+	private void onReceiveFileChooserValue(Uri[] value) {
+		if (_filePathCallback != null) {
+			_filePathCallback.onReceiveValue(value);
+			_filePathCallback = null;
 		}
 	}
 
