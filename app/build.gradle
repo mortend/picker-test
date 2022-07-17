@@ -13,7 +13,7 @@ dependencies {
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation 'com.drewnoakes:metadata-extractor:2.10.1'
-    implementation 'com.github.jrvansuita:PickImage:2.5.5'
+    implementation 'com.github.jrvansuita:PickImage:3.0.1'
 
 
 }
@@ -45,15 +45,15 @@ repositories {
 }
 
 android {
-    compileSdkVersion = 30
+    compileSdkVersion = 31
     buildToolsVersion = '30.0.3'
 
     defaultConfig {
 //#if !#(LIBRARY:Defined)
         applicationId = 'com.apps.app'
 //#endif
-        minSdkVersion 16
-        targetSdkVersion 30
+        minSdkVersion 26
+        targetSdkVersion 31
         versionCode = 1
         versionName = '0.1.0'
         multiDexEnabled true
