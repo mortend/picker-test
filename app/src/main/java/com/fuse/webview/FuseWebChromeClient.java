@@ -25,15 +25,14 @@ import com.vansuita.pickimage.bean.PickResult;
 import com.vansuita.pickimage.bundle.PickSetup;
 import com.vansuita.pickimage.dialog.PickImageDialog;
 import com.vansuita.pickimage.listeners.IPickCancel;
-import com.vansuita.pickimage.listeners.IPickClick;
 import com.vansuita.pickimage.listeners.IPickResult;
 
 public class FuseWebChromeClient extends WebChromeClient
 {
-	static final FrameLayout.LayoutParams COVER_SCREEN_PARAMS = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 	static final int REQUEST_CODE_FILE_PICKER = 51426;
 
 	int _originalOrientation;
+	ValueCallback<Uri[]> _filePathCallback;
 	FullscreenHolder _fullscreenContainer;
 	CustomViewCallback _customViewCallback;
 	View _customView;
@@ -55,7 +54,14 @@ public class FuseWebChromeClient extends WebChromeClient
 	}
 
 	@Override
-	public boolean onShowFileChooser(WebView webView, final ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
+	public boolean onShowFileChooser(final WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
+		// Cancel existing picker first, if any.
+		if (_filePathCallback != null) {
+			_filePathCallback.onReceiveValue(null);
+		}
+
+		_filePathCallback = filePathCallback;
+
 		if (Build.VERSION.SDK_INT >= 21) {
 			final boolean allowMultiple = fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE;
 
@@ -65,21 +71,41 @@ public class FuseWebChromeClient extends WebChromeClient
 						.setOnPickResult(new IPickResult() {
 							@Override
 							public void onPickResult(PickResult r) {
-								Log.d("FuseWebChromeClient", "onPickResult: " + r.getUri());
-								if (filePathCallback != null) {
-									filePathCallback.onReceiveValue(new Uri[]{ r.getUri() });
+								if (_filePathCallback != null) {
+									_filePathCallback.onReceiveValue(new Uri[]{ r.getUri() });
+									_filePathCallback = null;
 								}
 							}
 						})
 						.setOnPickCancel(new IPickCancel() {
 							@Override
 							public void onCancelClick() {
-								Log.d("FuseWebChromeClient", "onCancelClick");
-								if (filePathCallback != null) {
-									filePathCallback.onReceiveValue(null);
+								if (_filePathCallback != null) {
+									_filePathCallback.onReceiveValue(null);
+									_filePathCallback = null;
 								}
 							}
 						});
+
+				// It's possible to cancel the picker without receiving onCancelClick(), for example
+				// when tapping on the background, or when using the back button in camera mode.
+
+				// However, if we never call onReceiveValue() on our _filePathCallback, it is no
+				// longer possible to open any more pickers (onShowFileChooser just never gets
+				// called again...). So, to workaround the problem, we'll listen for any touch event
+				// from the WebView and make sure to call onReceiveValue() if it's not already done,
+				// and this makes it possible to open another picker.
+
+				webView.setOnTouchListener(new View.OnTouchListener() {
+					@Override
+					public boolean onTouch(View v, MotionEvent event) {
+						if (_filePathCallback != null) {
+							_filePathCallback.onReceiveValue(null);
+							_filePathCallback = null;
+						}
+						return false;
+					}
+				});
 
 				dialog.show(_activity.getSupportFragmentManager());
 				return true;
@@ -101,7 +127,7 @@ public class FuseWebChromeClient extends WebChromeClient
 					if (requestCode == REQUEST_CODE_FILE_PICKER) {
 						if (resultCode == Activity.RESULT_OK) {
 							if (intent != null) {
-								if (filePathCallback != null) {
+								if (_filePathCallback != null) {
 									Uri[] dataUris = null;
 
 									try {
@@ -126,13 +152,15 @@ public class FuseWebChromeClient extends WebChromeClient
 										Log.e("FuseWebChromeClient", e.toString());
 									}
 
-									filePathCallback.onReceiveValue(dataUris);
+									_filePathCallback.onReceiveValue(dataUris);
+									_filePathCallback = null;
 								}
 							}
 						}
 						else {
-							if (filePathCallback != null) {
-								filePathCallback.onReceiveValue(null);
+							if (_filePathCallback != null) {
+								_filePathCallback.onReceiveValue(null);
+								_filePathCallback = null;
 							}
 						}
 
