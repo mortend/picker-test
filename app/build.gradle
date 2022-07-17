@@ -13,8 +13,9 @@ dependencies {
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation 'com.drewnoakes:metadata-extractor:2.10.1'
-    
-    
+    implementation 'com.github.jrvansuita:PickImage:2.5.5'
+
+
 }
 
 // Extracts native libraries from AARs in the native_implementation configuration.
