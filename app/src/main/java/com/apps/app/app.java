@@ -29,10 +29,11 @@ import android.content.res.Configuration;
 import androidx.core.app.ActivityCompat;
 import android.view.View.OnLayoutChangeListener;
 import com.fuse.Activity.ActivityListener;
+import com.vansuita.pickimage.bean.PickResult;
+import com.vansuita.pickimage.listeners.IPickResult;
 
 
-
-public class app extends androidx.appcompat.app.AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback
+public class app extends androidx.appcompat.app.AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback, IPickResult
 {
 //#if !#(LIBRARY:Defined)
 
@@ -72,9 +73,14 @@ public class app extends androidx.appcompat.app.AppCompatActivity implements Act
     }
 
     @Override
-    public void onActivityResult (int arg0, int arg1, android.content.Intent arg2)
-    {
+    public void onActivityResult (int arg0, int arg1, android.content.Intent arg2) {
+        super.onActivityResult(arg0, arg1, arg2);
         fuseApp.onActivityResult(arg0, arg1, arg2);
+    }
+
+    @Override
+    public void onPickResult(final PickResult r) {
+        Log.d("onPickResult", r.toString());
     }
 
     @Override

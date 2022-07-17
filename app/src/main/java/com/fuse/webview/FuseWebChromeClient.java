@@ -81,42 +81,7 @@ public class FuseWebChromeClient extends WebChromeClient
 							}
 						});
 
-				com.fuse.Activity.ResultListener listener = new com.fuse.Activity.ResultListener() {
-					@Override
-					public boolean onResult(int requestCode, int resultCode, Intent intent) {
-						Log.d("FuseWebChromeClient", "onResult: " + requestCode + " " + resultCode);
-						dialog.onActivityResult(requestCode, resultCode, intent);
-
-						if (resultCode == Activity.RESULT_OK && intent != null) {
-							if (filePathCallback != null) {
-								Uri[] dataUris = null;
-
-								try {
-									if (intent.getDataString() != null) {
-										dataUris = new Uri[] { Uri.parse(intent.getDataString()) };
-									}
-								}
-								catch (Exception e) {
-									Log.e("FuseWebChromeClient", e.toString());
-								}
-
-								filePathCallback.onReceiveValue(dataUris);
-							}
-						}
-						else {
-							if (filePathCallback != null) {
-								filePathCallback.onReceiveValue(null);
-							}
-						}
-
-						dialog.getDialog().dismiss();
-						com.fuse.Activity.unsubscribeFromResults(this);
-						return true;
-					}
-				};
-
-				com.fuse.Activity.subscribeToResults(listener);
-				dialog.show(_activity);
+				dialog.show(_activity.getSupportFragmentManager());
 				return true;
 			}
 
