@@ -94,7 +94,7 @@ public class FuseWebChromeClient extends WebChromeClient
 
 				webView.setOnTouchListener(new View.OnTouchListener() {
 					@Override
-					public boolean onTouch(View v, MotionEvent event) {
+					public boolean onTouch(View view, MotionEvent event) {
 						onReceiveFileChooserValue(null);
 						return false;
 					}

@@ -3,3 +3,6 @@
 /.unobuild
 /app/.cxx/
 /app/build/
+/*.aab
+/*.aar
+/*.apk

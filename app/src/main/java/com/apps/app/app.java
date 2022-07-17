@@ -31,6 +31,7 @@ import android.view.View.OnLayoutChangeListener;
 import com.fuse.Activity.ActivityListener;
 
 
+
 public class app extends androidx.appcompat.app.AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback
 {
 //#if !#(LIBRARY:Defined)
@@ -71,7 +72,7 @@ public class app extends androidx.appcompat.app.AppCompatActivity implements Act
     }
 
     @Override
-    public void onActivityResult (int arg0, int arg1, android.content.Intent arg2) {
+    public void onActivityResult(int arg0, int arg1, android.content.Intent arg2) {
         super.onActivityResult(arg0, arg1, arg2);
         fuseApp.onActivityResult(arg0, arg1, arg2);
     }
