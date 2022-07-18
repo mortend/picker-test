@@ -65,6 +65,7 @@ public class app extends androidx.appcompat.app.AppCompatActivity implements Act
     {
         return fuseApp.onKeyUp(keyCode, event);
     }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event)
     {
@@ -128,8 +129,8 @@ public class app extends androidx.appcompat.app.AppCompatActivity implements Act
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
-    {
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         fuseApp.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
